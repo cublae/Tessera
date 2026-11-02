@@ -6,6 +6,19 @@ Desktop shell для [niri](https://github.com/YaLTeR/niri) на
 тем же функционалом, конфигом и командами. Состояние композитора берётся
 напрямую из niri IPC — Hyprland-специфичных зависимостей нет.
 
+![Рабочий стол](docs/desktop.png)
+
+<p align="center">
+  <img src="docs/control-center.png" width="300" alt="Центр управления">
+  <img src="docs/launcher.png" width="390" alt="Лаунчер">
+</p>
+
+<p align="center">
+  <img src="docs/notifications.png" width="315" alt="Уведомления">
+  <img src="docs/calendar.png" width="345" alt="Календарь">
+  <img src="docs/weather.png" width="300" alt="Погода">
+</p>
+
 ## Установка
 
 Нужны **niri** (шелл читает `$NIRI_SOCKET`) и **Nix** с flakes.
