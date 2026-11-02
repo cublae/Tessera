@@ -1,0 +1,458 @@
+# Tessera
+
+Desktop shell для [niri](https://github.com/YaLTeR/niri) на
+[Quickshell](https://quickshell.org) (QML), оформленный в духе GNOME/Adwaita.
+Это [Manifold](https://github.com/cublae/Manifold), переписанный на Quickshell, с
+тем же функционалом, конфигом и командами. Состояние композитора берётся
+напрямую из niri IPC — Hyprland-специфичных зависимостей нет.
+
+## Установка
+
+Нужны **niri** (шелл читает `$NIRI_SOCKET`) и **Nix** с flakes.
+
+Попробовать поверх текущей сессии, из клона репозитория:
+
+```bash
+nix run .
+```
+
+Остановить — `Ctrl+C` или `tessera quit`.
+
+Постоянно — через Home Manager:
+
+```nix
+{
+  inputs.tessera = {
+    url = "github:cublae/Tessera";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  # в конфигурации home-manager:
+  imports = [ inputs.tessera.homeManagerModules.default ];
+
+  programs.tessera.enable = true;
+}
+```
+
+Модуль ставит пакет, генерирует `~/.config/tessera/config.json` из опций и
+заводит systemd-юзер-сервис, привязанный к `graphical-session.target`.
+
+`inputs.nixpkgs.follows` избавляет от второй копии Qt в системе. Сборке нужен
+`pkgs.quickshell` 0.3 или новее, то есть достаточно свежий nixpkgs.
+
+### Запуск без systemd, из автостарта niri
+
+По умолчанию модуль заводит systemd-юзер-сервис. Запуск можно отдать вместо
+этого самому niri — как именно, зависит от того, чем у вас сделан его конфиг.
+
+**Конфиг niri пишется руками** (`~/.config/niri/config.kdl`) — самый частый
+случай, в том числе когда сам композитор включён на системном уровне через
+`programs.niri.enable`. Выключите сервис в home-manager:
+
+```nix
+programs.tessera = {
+  enable = true;
+  systemd.enable = false;
+};
+```
+
+и добавьте строку в `config.kdl`:
+
+```kdl
+spawn-at-startup "tessera"
+```
+
+Искать бинарь по имени достаточно: home-manager кладёт пакет в профиль, а niri
+передаёт детям свой `PATH` вместе с `NIRI_SOCKET` и `WAYLAND_DISPLAY` — больше
+шеллу ничего не нужно. Если забыть про эту строку, home-manager при сборке
+предупредит, что шелл никто не запускает.
+
+**Конфиг niri генерируется home-manager** (импортирован модуль `programs.niri`)
+— тогда строку впишет сам модуль:
+
+```nix
+programs.tessera = {
+  enable = true;
+  systemd.enable = false;
+  niri.spawnAtStartup = true;
+};
+```
+
+Включать `niri.spawnAtStartup` без импортированного модуля niri нельзя — сборка
+остановится с объяснением, а не молча ничего не сделает.
+
+Чем при этом жертвуете: systemd-сервис перезапускает шелл, если тот упал, и
+упорядочивает его относительно `graphical-session.target`. Из автостарта niri
+падение означает сессию без панели до следующего входа.
+
+Готовый пример настройки:
+
+```nix
+programs.tessera = {
+  enable = true;
+
+  bar = {
+    position = "bottom";
+    size = 38;
+    modules = {
+      start = [ "launcher" "clipboard" "workspaces" "media" ];
+      center = [ "clock" ];
+      end = [ "privacy" "screencast" "recording" "tray" "keyboard-layout" "notifications" "system-indicators" ];
+    };
+    outputs."DP-2".end = [ "tray" "system-indicators" ];
+  };
+
+  workspaces.showIcons = true;
+  clock.format = "%H:%M";
+  notifications.position = "auto";
+  theme = {
+    mode = "auto";
+    radius = 12;
+  };
+
+  # для ключей без отдельной опции
+  settings.clipboard.maxEntries = 500;
+};
+```
+
+### Stylix
+
+Ничего включать не нужно: если Stylix есть в конфигурации и включён, модуль сам
+это увидит.
+
+Большая часть приходит и без интеграции. Tessera рисует именованными цветами
+libadwaita, а GTK-цель Stylix записывает их в `~/.config/gtk-4.0/gtk.css` —
+всю палитру вместе с акцентом; шрифт и тема иконок лежат рядом, в
+`settings.ini`. В Qt нет libadwaita, поэтому шелл читает оба файла сам, так же,
+как их прочитало бы любое GTK-приложение, и следит за их изменениями.
+
+Единственное, что для этого нужно — **не задавать `theme.accent`**. Заданный
+акцент закрашивает собой то, что выбрал Stylix; по умолчанию он не задан.
+
+Интеграция добавляет две вещи, которых в этих файлах нет: полярность (иначе шелл
+спросил бы портал рабочего стола и мог получить ответ, расходящийся с палитрой,
+которой он рисует) и путь к обоям (иначе его пришлось бы искать через waypaper
+или swww).
+
+Всё, что задано в `programs.tessera.theme`, перебивает Stylix — разойтись с
+одним углом схемы стоит одной строки:
+
+```nix
+programs.tessera.theme.mode = "light";   # вопреки stylix.polarity
+programs.tessera.stylix.enable = false;  # или совсем не следовать
+```
+
+### Горячие клавиши
+
+Команда не поднимает второй шелл, а уходит работающему через IPC Quickshell —
+около 35 мс,
+так что бинд отрабатывает без заметной задержки и биндить его можно напрямую,
+без обёрток:
+
+```bash
+tessera toggle launcher            # ещё: clipboard, calendar, control-center,
+                                    #      notification-center и weather — последний
+                                    #      есть, только если задано место
+tessera control-center wifi        # сразу на нужной странице: wifi, bluetooth, mixer,
+                                    #      mixer-input, record, session
+tessera pick-color                 # пипетка: hex уходит в буфер
+tessera desktop edit               # правка виджетов рабочего стола; ещё on и off
+tessera reload                     # перечитать конфиг
+tessera windows                    # окна шелла
+tessera quit
+```
+
+Часть из этого есть и в интерфейсе — пипетка и правка виджетов лежат плитками в
+центре управления, — но на клавишу вешается только так.
+
+Если шелл не запущен, команда так и скажет и завершится с ненулевым кодом, а не
+поднимет его: запуск — это `tessera` без аргументов, и только он.
+
+Для конфига niri:
+
+```kdl
+binds {
+    Mod+Space { spawn "tessera" "toggle" "launcher"; }
+    Mod+V     { spawn "tessera" "toggle" "clipboard"; }
+    Mod+N     { spawn "tessera" "toggle" "control-center"; }
+    Mod+P     { spawn "tessera" "pick-color"; }
+}
+```
+
+## Настройка
+
+Две формы одного и того же. Опции Home Manager `programs.tessera.*` собираются
+в `~/.config/tessera/config.json` — тот же файл можно писать руками, если
+Home Manager не используется. Указывать нужно только то, что отличается от
+умолчаний; файл отслеживается, правки применяются без перезапуска, а битый JSON
+не роняет шелл — он логируется, и берутся умолчания.
+
+Полный конфиг со всеми значениями по умолчанию:
+
+```json
+{
+  "bar": {
+    "enabled": true,
+    "position": "bottom",
+    "size": 38,
+    "onAllMonitors": true,
+    "modules": {
+      "start": ["launcher", "clipboard", "workspaces", "media"],
+      "center": ["clock"],
+      "end": ["privacy", "screencast", "recording", "tray", "keyboard-layout", "notifications", "system-indicators"]
+    },
+    "outputs": {}
+  },
+  "workspaces": {
+    "perMonitor": true,
+    "showEmpty": false,
+    "labels": "index",
+    "showIcons": true,
+    "maxIcons": 4
+  },
+  "clock": {
+    "format": "%H:%M",
+    "tooltipFormat": "%A, %e %B %Y",
+    "verticalFormat": "%H\n%M"
+  },
+  "calendar": { "firstDay": "monday" },
+  "interface": { "language": "auto" },
+  "desktop": {
+    "enabled": false,
+    "clockFormat": "%H:%M",
+    "dateFormat": "%A, %e %B",
+    "showDate": true,
+    "showMedia": true
+  },
+  "weather": {
+    "location": "",
+    "latitude": 0,
+    "longitude": 0,
+    "units": "metric",
+    "interval": 30
+  },
+  "media": { "maxLength": 24 },
+  "resources": {
+    "interval": 2000,
+    "showCpu": true,
+    "showMemory": true,
+    "showTemperature": true
+  },
+  "focusedWindow": { "maxLength": 48, "showAppId": false },
+  "notifications": {
+    "timeout": 5,
+    "position": "auto",
+    "maxPopups": 3,
+    "doNotDisturb": false
+  },
+  "launcher": { "minScore": 0.2, "showHidden": false },
+  "osd": { "timeout": 1500, "position": "bottom", "barRadius": null },
+  "audio": { "maxVolume": 1 },
+  "animations": { "enabled": true, "duration": 180 },
+  "clipboard": {
+    "manageDaemon": true,
+    "maxEntries": 200,
+    "maxVisible": 20,
+    "persist": true
+  },
+  "screenRecord": {
+    "target": "portal",
+    "fps": 60,
+    "audio": "default_output",
+    "quality": "very_high",
+    "codec": "auto",
+    "directory": ""
+  },
+  "theme": {
+    "mode": "auto",
+    "accent": null,
+    "accentFromWallpaper": false,
+    "wallpaper": "",
+    "radius": null,
+    "transition": 250,
+    "spacing": 6,
+    "opacity": 1,
+    "font": ""
+  },
+  "modules": {
+    "controlCenter": true,
+    "notifications": true,
+    "launcher": true,
+    "clipboard": true,
+    "osd": true
+  }
+}
+```
+
+### Панель
+
+| Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
+| --- | --- | --- | --- |
+| `bar.enabled` | `bar.enable` | `true` | Показывать панель |
+| `bar.position` | `bar.position` | `"bottom"` | Край экрана: `top`, `bottom`, `left`, `right`. На боковой панели модули стоят вертикально, а часы переходят на `clock.verticalFormat` |
+| `bar.size` | `bar.size` | `38` | Толщина в логических пикселях: высота у горизонтальной, ширина у вертикальной |
+| `bar.onAllMonitors` | `bar.onAllMonitors` | `true` | Панель на каждом мониторе, а не только на первом |
+| `bar.modules.start` | `bar.modules.start` | `["launcher", "clipboard", "workspaces", "media"]` | Модули начальной секции, по порядку |
+| `bar.modules.center` | `bar.modules.center` | `["clock"]` | Модули центральной секции |
+| `bar.modules.end` | `bar.modules.end` | `["privacy", "screencast", "recording", "tray", "keyboard-layout", "notifications", "system-indicators"]` | Модули конечной секции |
+| `bar.outputs.<имя>.{start,center,end}` | `bar.outputs.<имя>.{start,center,end}` | `{}` | Раскладка для конкретного монитора. Ключ — имя коннектора из `niri msg outputs`. Секции, которых нет, берутся из `bar.modules`; несуществующее имя просто ни с чем не совпадёт |
+
+Значения в списках модулей:
+
+| Модуль | Что делает |
+| --- | --- |
+| `workspaces` | Воркспейсы niri с иконками окон, клик и колесо переключают |
+| `focused-window` | Заголовок активного окна (на боковой панели — иконка) |
+| `clock` | Часы, клик открывает календарь |
+| `keyboard-layout` | Текущая раскладка, клик переключает |
+| `tray` | Системный трей, ПКМ открывает меню приложения |
+| `notifications` | Колокольчик с точкой непрочитанного, клик открывает центр |
+| `system-indicators` | Сеть, звук, батарея; клик открывает центр управления |
+| `media` | Что играет: название, клик — пауза, колесо — переключение трека |
+| `recording` | Виден только во время записи экрана: таймер, клик — стоп |
+| `screencast` | Виден, только когда кто-то захватывает экран (звонок, OBS, портал). Источник — сам композитор, а не список процессов |
+| `privacy` | Виден, только когда занят микрофон или камера; в подсказке — кто именно |
+| `resources` | CPU, память и температура из `/proc` и hwmon |
+| `weather` | Температура и облачность; клик открывает прогноз. Нужны координаты в `weather.latitude`/`longitude`, без них модуль не строится |
+| `launcher` | Кнопка лаунчера |
+| `clipboard` | Кнопка истории буфера |
+| `control-center` | Отдельная кнопка центра управления |
+| `spacer` | Распорка внутри секции |
+
+### Воркспейсы, часы, календарь
+
+| Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
+| --- | --- | --- | --- |
+| `workspaces.perMonitor` | `workspaces.perMonitor` | `true` | Показывать только воркспейсы того монитора, на котором панель |
+| `workspaces.showEmpty` | `workspaces.showEmpty` | `false` | Показывать пустые воркспейсы. niri всегда держит один про запас, поэтому по умолчанию выключено; активный виден в любом случае |
+| `workspaces.labels` | `workspaces.labels` | `"index"` | Подпись кнопки: `index`, `name` или `none` |
+| `workspaces.showIcons` | `workspaces.showIcons` | `true` | Иконка на каждое окно воркспейса |
+| `workspaces.maxIcons` | `workspaces.maxIcons` | `4` | Сколько иконок рисовать, прежде чем остальные отбрасываются |
+| `clock.format` | `clock.format` | `"%H:%M"` | strftime для панели |
+| `clock.tooltipFormat` | `clock.tooltipFormat` | `"%A, %e %B %Y"` | strftime для подсказки |
+| `clock.verticalFormat` | `clock.verticalFormat` | `"%H\n%M"` | strftime для вертикальной панели; перевод строки учитывается |
+| `calendar.firstDay` | `calendar.firstDay` | `"monday"` | С какого дня начинается сетка месяца: `monday` или `sunday`. Ни GLib, ни GTK не отдают ответ локали, поэтому это настройка, а не автоопределение |
+| `interface.language` | `interface.language` | `"auto"` | Язык интерфейса шелла: `auto` (по локали), `en` или `ru`. Затрагивает только сам Tessera — имена приложений, тексты уведомлений и заголовки окон приходят уже написанными |
+| `weather.location` | `weather.location` | `""` | Название места, например `Reykjavik`. Разово ищется через геокодер Open-Meteo, который отдаёт и координаты, и собственное имя места — иначе город показать неоткуда, forecast API имён не возвращает. `latitude`/`longitude`, если заданы, перебивают координаты, но имя всё равно берётся отсюда |
+| `weather.latitude` | `weather.latitude` | `0` | Широта, для которой показывается погода. Умолчания и угадывания нет: определять по IP значит отдать адрес геосервису до того, как ты на это согласился, а по часовому поясу промахнёшься на пол-континента. Без координат модуль и его дропдаун вообще не строятся |
+| `weather.longitude` | `weather.longitude` | `0` | Долгота |
+| `weather.units` | `weather.units` | `"metric"` | `metric` — °C и км/ч, `imperial` — °F и mph |
+| `weather.interval` | `weather.interval` | `30` | Минуты между запросами. Погода меняется небыстро, сервис бесплатный, так что редкий опрос и достаточен, и вежлив. Минимум 5 |
+| `desktop.enabled` | `desktop.enable` | `false` | Виджеты на рабочем столе: крупные часы, дата и что играет. Они над обоями и под всеми окнами, и видны только пока на активном воркспейсе монитора нет окон — часы за полноэкранным редактором всё равно никто не увидит |
+| `desktop.clockFormat` | `desktop.clockFormat` | `"%H:%M"` | strftime для крупных часов |
+| `desktop.dateFormat` | `desktop.dateFormat` | `"%A, %e %B"` | strftime для строки под часами |
+| `desktop.showDate` | `desktop.showDate` | `true` | Показывать дату под часами |
+| `desktop.showMedia` | `desktop.showMedia` | `true` | Показывать, что играет, когда что-то играет |
+| — | — | — | Расположение виджетов задаётся мышью, а не конфигом: плитка **Desktop** в центре управления (или `tessera desktop edit`) включает режим правки: виджеты перетаскиваются по сетке, колесо меняет размер, правый клик — выравнивание относительно точки сетки (по центру, влево, вправо). Позиции хранятся отдельно для каждого монитора в `~/.local/state/tessera/desktop-layout.json`. Escape или Enter выходит из режима |
+| `focusedWindow.maxLength` | `focusedWindow.maxLength` | `48` | Обрезать заголовок после стольких символов; `0` — не обрезать |
+| `focusedWindow.showAppId` | `focusedWindow.showAppId` | `false` | Показывать app id вместо заголовка |
+| `media.maxLength` | `media.maxLength` | `24` | Длина названия трека в панели, в символах |
+| `resources.interval` | `resources.interval` | `2000` | Миллисекунды между замерами |
+| `resources.showCpu` | `resources.showCpu` | `true` | Показывать загрузку CPU |
+| `resources.showMemory` | `resources.showMemory` | `true` | Показывать занятую память |
+| `resources.showTemperature` | `resources.showTemperature` | `true` | Показывать температуру. Всё равно скрыто, если сенсора нет |
+
+### Уведомления, OSD, звук, анимации
+
+| Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
+| --- | --- | --- | --- |
+| `notifications.timeout` | `notifications.timeout` | `5` | Секунды на экране. Критические ждут пользователя и это игнорируют |
+| `notifications.position` | `notifications.position` | `"auto"` | Угол всплывающих карточек: `auto`, `top-right`, `top-left`, `top-center`, `bottom-right`, `bottom-left`, `bottom-center`. `auto` следует за баром |
+| `notifications.maxPopups` | `notifications.maxPopups` | `3` | Сколько карточек на экране одновременно; остальные ждут в центре |
+| `notifications.doNotDisturb` | `notifications.doNotDisturb` | `false` | Гасить всплывашки, не теряя сами уведомления |
+| `osd.timeout` | `osd.timeout` | `1500` | Миллисекунды, сколько висит оверлей громкости/яркости |
+| `osd.position` | `osd.position` | `"bottom"` | Где появляется: `bottom`, `top`, `center` |
+| `osd.barRadius` | `osd.barRadius` | `null` | Скругление полоски уровня в пикселях. `null` — следовать `theme.radius`, как и всё остальное; задавать отдельно стоит, только если хочется с ним разойтись. `0` — прямые углы, от половины высоты и выше получается пилюля |
+| `audio.maxVolume` | `audio.maxVolume` | `1` | Потолок громкости, где `1` — 100%. PipeWire пускает до 150%, шелл следит за выходом по умолчанию и стягивает обратно |
+| `animations.enabled` | `animations.enable` | `true` | Анимации панелей, уведомлений и страниц. Системный `gtk-enable-animations` всё равно главнее |
+| `animations.duration` | `animations.duration` | `180` | Базовая длительность в миллисекундах |
+
+### Лаунчер, буфер обмена, запись экрана
+
+| Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
+| --- | --- | --- | --- |
+| `launcher.minScore` | `launcher.minScore` | `0.2` | Минимальный балл нечёткого поиска, 0..1. Меньше — терпимее |
+| `launcher.showHidden` | `launcher.showHidden` | `false` | Показывать записи с `NoDisplay` в `.desktop` |
+| `clipboard.manageDaemon` | — (`settings`) | `true` | Поднимать `wl-paste --watch cliphist store` вместе с шеллом |
+| `clipboard.maxEntries` | — (`settings`) | `200` | Глубина истории |
+| `clipboard.maxVisible` | — (`settings`) | `20` | Сколько записей показывать до поиска |
+| `clipboard.persist` | — (`settings`) | `true` | Хранить историю между запусками, в кеш-директории. Файл текстовый, то есть скопированное оказывается на диске читаемым. Работает только для встроенного запасного бэкенда на `wl-clipboard`: с cliphist история его собственная |
+| `screenRecord.target` | — (`settings`) | `"portal"` | Что снимает gpu-screen-recorder: `portal`, `focused`, имя монитора или `region`. Без прямого доступа к DRM работает только `portal` |
+| `screenRecord.fps` | — (`settings`) | `60` | Кадры в секунду |
+| `screenRecord.audio` | — (`settings`) | `"default_output"` | Что писать: `default_output`, `default_input`, `device:имя`, `app:имя`, или несколько через `\|` в одну дорожку; пусто — тишина |
+| `screenRecord.quality` | — (`settings`) | `"very_high"` | `medium`, `high`, `very_high` или `ultra` |
+| `screenRecord.codec` | — (`settings`) | `"auto"` | `auto`, `h264`, `hevc`, `av1` и их 10-битные и HDR-варианты. `auto` отдаёт выбор видеокарте |
+| `screenRecord.directory` | — (`settings`) | `""` | Куда писать записи; пусто — `~/Videos` |
+
+### Тема
+
+| Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
+| --- | --- | --- | --- |
+| `theme.mode` | `theme.mode` | `"auto"` | `light`, `dark` или `auto` — за системной настройкой |
+| `theme.accent` | `theme.accent` | `null` | Акцентный цвет, hex, только для поверхностей Tessera. `null` не перекрывает ничего — тогда берётся акцент рабочего стола: настройка GNOME или то, что генератор темы вроде Stylix записал в `~/.config/gtk-4.0/gtk.css`. Без такой темы применится собственный акцент libadwaita, так что на голой системе вид не меняется |
+| `theme.accentFromWallpaper` | `theme.accentFromWallpaper` | `false` | Брать акцент из обоев вместо `accent`. Выбирается не самый большой по площади цвет, а самый заметный: крупнейшая область фотографии обычно небо или тень, и акцент из них не отличить от панели. С чёрно-белых обоев ничего не берётся, остаётся `accent` |
+| `theme.wallpaper` | `theme.wallpaper` | `""` | Путь к обоям для `accentFromWallpaper`. Пусто — шелл ищет сам: waypaper пишет ответ в свой конфиг, swww можно спросить. Протокола для этого в Wayland нет и композитор обоями не владеет, поэтому для других программ путь нужно указать явно |
+| `theme.radius` | `theme.radius` | `null` | Скругление углов панелей, лаунчера и контролов внутри них, в пикселях. `null` — брать у рабочего стола: правило `* { border-radius }` из `~/.config/gtk-4.0/gtk.css`, которое пишут туда генераторы тем, а если такого правила нет — квадратные углы. Отдельной опции GTK для скругления не существует, поэтому это единственный общесистемный источник. То, что задумано пилюлей (ползунки, точка непрочитанного), пилюлей и остаётся |
+| `theme.transition` | `theme.transition` | `250` | Миллисекунды, на которые экран замирает при переключении светлой/тёмной темы. niri держит текущий кадр и потом плавно переводит его в новый, так что смена выглядит растворением, а не одновременным морганием всех окон. Задержка должна покрывать самое медленное приложение, а не только Tessera. `0` выключает |
+| `theme.spacing` | `theme.spacing` | `6` | Базовый шаг отступов в пикселях; все паддинги кратны ему |
+| `theme.opacity` | `theme.opacity` | `1` | Непрозрачность фона панелей, 0..1 |
+| `theme.font` | `theme.font` | `""` | Шрифт; пусто — системный |
+
+### Что вообще собирать
+
+| Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
+| --- | --- | --- | --- |
+| `modules.controlCenter` | `modules.controlCenter` | `true` | Центр управления |
+| `modules.notifications` | `modules.notifications` | `true` | Демон уведомлений, всплывашки и центр уведомлений. Имя на шине freedesktop может держать только один процесс — выключай, если уведомления обслуживает другой шелл |
+| `modules.launcher` | `modules.launcher` | `true` | Лаунчер |
+| `modules.clipboard` | — (`settings`) | `true` | История буфера |
+| `modules.osd` | `modules.osd` | `true` | Оверлей громкости и яркости |
+
+### Опции, которых нет в конфиге
+
+Эти существуют только в Home Manager — они про то, как шелл ставится и
+запускается, а не про его поведение:
+
+| Опция | По умолчанию | Что делает |
+| --- | --- | --- |
+| `programs.tessera.enable` | `false` | Включить Tessera |
+| `programs.tessera.package` | пакет из этого флейка | Какой пакет ставить |
+| `programs.tessera.systemd.enable` | `true` | Запускать из systemd-юзер-сервиса, привязанного к `graphical-session.target`. Выключается ради автостарта niri — см. [раздел выше](#запуск-без-systemd-из-автостарта-niri) |
+| `programs.tessera.niri.spawnAtStartup` | `false` | Добавить Tessera в `programs.niri.settings.spawn-at-startup`. Работает только с импортированным модулем niri, иначе сборка остановится с объяснением; для конфига, написанного руками, строка `spawn-at-startup "tessera"` пишется в `config.kdl` самостоятельно. systemd предпочтительнее: он перезапустит шелл после падения |
+| `programs.tessera.stylix.enable` | включён, если включён Stylix | Следовать Stylix: полярность и обои. Цвета и шрифт приходят сами, через его GTK-цель — при условии, что `theme.accent` не задан. Опции `theme.*` перебивают |
+| `programs.tessera.settings` | `{}` | Произвольный JSON поверх сгенерированного конфига. Для ключей, у которых своей опции пока нет |
+
+Источник правды по полям — [`shell/lib/defaults.js`](shell/lib/defaults.js).
+
+## Чем отличается от Manifold
+
+Конфиг, опции Home Manager и команды те же — переезд сводится к замене
+`programs.manifold` на `programs.tessera` и `manifold` на `tessera` в биндах.
+Разница:
+
+- **Нет плитки прокси** mihomo и ключа `modules.proxy`.
+- **Нет команды `inspector`**: это был GTK Inspector, у Qt такого нет.
+- Команды ходят не по D-Bus, а через IPC Quickshell (`qs ipc call tessera …`).
+- Меню трея рисует сам шелл, в тон остальным панелям, а не GTK-поповер;
+  подменю открываются на месте, со стрелкой назад.
+- «Не беспокоить» хранится в `~/.local/state/tessera/do-not-disturb.json`,
+  а не в GSettings; частота запусков для лаунчера — там же, в `launches.json`.
+- Палитра Adwaita встроена в шелл, а `gtk.css`, `settings.ini` и портал
+  читаются напрямую — в Qt нет libadwaita, которая делала это за Manifold.
+
+## Разработка
+
+```bash
+nix develop
+TESSERA_DEV=1 ./nix/tessera.sh            # запустить шелл из этого клона
+TESSERA_CONFIG=/tmp/test.json ./nix/tessera.sh   # с другим конфигом
+```
+
+С `TESSERA_DEV=1` Quickshell перезагружает QML при каждом сохранении файла.
+Другой экземпляр того же клона запуск не допустит (`--no-duplicate`), так что
+рядом с установленным пакетом его можно гонять свободно. Генератор списка
+эмодзи — `tools/generate-emoji.sh`.
+
+## Лицензия
+
+MIT, текст в [`LICENSE`](LICENSE).
