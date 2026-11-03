@@ -47,8 +47,25 @@ Singleton {
 
     // An image for the card: the notification's own picture, else the sending
     // application's icon, else the desktop entry's.
+    // `notify-send -i` arrives wrapped as `image://icon/VALUE`, whether VALUE is a
+    // themed name or a file. Given a path the icon provider finds nothing and draws
+    // its magenta placeholder, so the two are told apart here.
+    function iconRequest(n: var): string {
+        const image = n.image ?? ""
+        return image.startsWith("image://icon/") ? image.slice("image://icon/".length) : ""
+    }
+
+    // What to load as the notification's picture, or "".
+    function pictureOf(n: var): string {
+        const requested = iconRequest(n)
+        if (!requested) return n.image ?? ""
+        if (!requested.startsWith("/")) return ""
+        return "file://" + requested.split("/").map(encodeURIComponent).join("/")
+    }
+
     function appIconOf(n: var): string {
-        return n.appIcon || n.desktopEntry || ""
+        const requested = iconRequest(n)
+        return n.appIcon || (requested.startsWith("/") ? "" : requested) || n.desktopEntry || ""
     }
 
     JsonFile {

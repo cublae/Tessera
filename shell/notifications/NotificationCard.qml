@@ -106,7 +106,7 @@ Rectangle {
 
                     anchors.fill: parent
                     visible: status === Image.Ready && implicitWidth >= 54 && implicitHeight >= 54
-                    source: root.notification.image
+                    source: Notifs.pictureOf(root.notification)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     sourceSize.height: 108
@@ -126,7 +126,7 @@ Rectangle {
                     anchors.centerIn: parent
                     size: 24
                     name: picture.status === Image.Ready ? "" : Notifs.appIconOf(root.notification)
-                    source: picture.status === Image.Ready ? root.notification.image : ""
+                    source: picture.status === Image.Ready ? picture.source : ""
                     fallback: "dialog-information-symbolic"
                 }
             }

@@ -21,7 +21,7 @@ Rectangle {
     property bool fill: false
     property color activeColor: Theme.alpha(Theme.fg, 0.12)
     property color hoverColor: Theme.alpha(Theme.fg, 0.08)
-    readonly property bool hovered: area.containsMouse
+    readonly property bool hovered: hover.hovered
     readonly property bool pressed: area.pressed
     readonly property real contentWidth: layout.implicitWidth + padding * 2
 
@@ -63,11 +63,17 @@ Rectangle {
         rowSpacing: root.spacing
     }
 
+    // Not the MouseArea's `containsMouse`: a `Tip` lies on top of it and takes the
+    // hover events, so the area would only learn of the pointer from a press, and
+    // never hear that it left -- leaving the button lit after every click.
+    HoverHandler {
+        id: hover
+    }
+
     MouseArea {
         id: area
 
         anchors.fill: parent
-        hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         cursorShape: Qt.PointingHandCursor
 
