@@ -12,6 +12,7 @@
   wl-clipboard,
   cliphist,
   grim,
+  slurp,
   coreutils,
   gnugrep,
   gnused,
@@ -26,7 +27,8 @@
 # Every external program the shell runs must be on the wrapper's PATH, or the
 # feature it backs silently stays dark: gdbus answers the colour scheme from
 # the desktop portal, nmcli joins hidden networks, cliphist and wl-clipboard
-# keep the clipboard history, grim freezes the screen for the colour picker.
+# keep the clipboard history, grim freezes the screen for the colour picker,
+# and with slurp takes the screenshots on Hyprland.
 #
 # busctl and udevadm drive the backlight. They belong to systemd, which is
 # already the session's own, so they are appended rather than prepended: the
@@ -77,6 +79,7 @@ stdenvNoCC.mkDerivation {
           wl-clipboard
           cliphist
           grim
+          slurp
           coreutils
           gnugrep
           gnused
@@ -96,7 +99,7 @@ stdenvNoCC.mkDerivation {
   '';
 
   meta = {
-    description = "A desktop shell for the niri compositor, built on Quickshell";
+    description = "A desktop shell for niri and Hyprland, built on Quickshell";
     mainProgram = "tessera";
     platforms = lib.platforms.linux;
     license = lib.licenses.mit;

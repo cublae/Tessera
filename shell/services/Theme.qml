@@ -45,13 +45,14 @@ Singleton {
     // whatever is there afterwards. So the request goes out first and the
     // palette flips once niri has it; the delay has to cover the slowest
     // application following the same setting, not only this shell.
+    // Hyprland has no equivalent, so there the palette just flips.
     onWantDarkChanged: {
         const ms = Config.c.theme.transition
-        if (ms <= 0 || !Niri.connected) {
+        if (ms <= 0 || !Compositor.canTransition) {
             dark = wantDark
             return
         }
-        Niri.dispatch({ DoScreenTransition: { delay_ms: ms } }, () => flip.restart())
+        Compositor.transition(ms, () => flip.restart())
         flipFallback.restart()
     }
 

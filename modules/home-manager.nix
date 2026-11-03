@@ -223,7 +223,7 @@ let
 in
 {
   options.programs.tessera = {
-    enable = mkEnableOption "Tessera, a desktop shell for niri";
+    enable = mkEnableOption "Tessera, a desktop shell for niri and Hyprland";
 
     package = mkOption {
       type = types.package;
@@ -239,7 +239,7 @@ in
         Start Tessera from a systemd user service bound to
         graphical-session.target.
 
-        Turn this off to start the shell from niri's own `spawn-at-startup`
+        Turn this off to start the shell from the compositor's own autostart
         instead. The service is what restarts Tessera if it ever exits, so
         without it a crash leaves you with no panel until the next login.
 
@@ -248,6 +248,9 @@ in
         written for you. With a hand-written config.kdl, add it yourself:
 
             spawn-at-startup "tessera"
+
+        On Hyprland, add it to your config: `hl.exec_cmd("tessera")` from a
+        `hyprland.start` handler in Lua, or `exec-once = tessera` in hyprlang.
       '';
     };
 
@@ -386,7 +389,7 @@ in
         };
         description = ''
           Per-output module layouts, keyed by connector name as printed by
-          `niri msg outputs`. Sections left unset fall back to
+          `niri msg outputs` or `hyprctl monitors`. Sections left unset fall back to
           {option}`programs.tessera.bar.modules`, and a name that matches no
           connected output is ignored.
         '';
@@ -454,7 +457,8 @@ in
           niri holds the current frame for this long and then cross-fades to
           whatever is there afterwards, so the switch is a dissolve rather than
           every window blinking at once. The delay has to cover the slowest
-          application repainting, not just Tessera. 0 turns it off.
+          application repainting, not just Tessera. 0 turns it off. Hyprland
+          has no equivalent and ignores this.
         '';
       };
 
@@ -972,9 +976,10 @@ in
           programs.tessera is enabled, but neither systemd.enable nor
           niri.spawnAtStartup is on, so nothing starts the shell at login.
 
-          Add it to your niri config by hand:
+          Add it to your compositor's config by hand:
 
-            spawn-at-startup "tessera"
+            spawn-at-startup "tessera"               (niri)
+            hl.exec_cmd("tessera")                   (Hyprland, on hyprland.start)
 
           or set programs.tessera.systemd.enable back to true.
         '';

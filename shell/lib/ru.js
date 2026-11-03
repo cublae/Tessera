@@ -18,6 +18,7 @@ var ru = {
   "Screen Record": "Запись экрана",
   Screenshot: "Снимок экрана",
   Region: "Область",
+  "Screenshot copied": "Снимок скопирован",
   "Pick colour": "Пипетка",
   "To clipboard": "В буфер",
   Desktop: "Рабочий стол",

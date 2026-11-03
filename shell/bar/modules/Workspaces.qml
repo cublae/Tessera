@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import qs.services
 import qs.components
 
-// niri's workspaces, with an icon per window; click to focus, scroll to cycle.
+// The workspaces, with an icon per window; click to focus, scroll to cycle.
 GridLayout {
     id: root
 
@@ -15,11 +15,11 @@ GridLayout {
     columnSpacing: 2
     rowSpacing: 2
 
-    readonly property var shownWorkspaces: cfg.perMonitor ? Niri.workspacesOn(bar.output) : Niri.workspaces
+    readonly property var shownWorkspaces: cfg.perMonitor ? Compositor.workspacesOn(bar.output) : Compositor.workspaces
 
     readonly property var byWorkspace: {
         const map = {}
-        for (const w of Niri.windows) {
+        for (const w of Compositor.windows) {
             if (w.workspace_id === null) continue
             ;(map[w.workspace_id] = map[w.workspace_id] ?? []).push(w)
         }
@@ -49,11 +49,11 @@ GridLayout {
     }
 
     function cycle(direction: int): void {
-        const list = cfg.perMonitor ? Niri.workspacesOn(bar.output) : Niri.workspaces
+        const list = cfg.perMonitor ? Compositor.workspacesOn(bar.output) : Compositor.workspaces
         const current = list.findIndex(w => w.is_active)
         if (current === -1) return
         const next = list[current + direction]
-        if (next) Niri.focusWorkspace(next.id)
+        if (next) Compositor.focusWorkspace(next.id)
     }
 
     WheelHandler {
@@ -92,7 +92,7 @@ GridLayout {
 
             readonly property color ink: w.is_focused ? Theme.accentFg : w.is_urgent ? Theme.destructive : w.is_active ? Theme.accent : Theme.fg
 
-            onClicked: Niri.focusWorkspace(w.id)
+            onClicked: Compositor.focusWorkspace(w.id)
 
             Txt {
                 visible: text !== ""

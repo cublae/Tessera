@@ -102,10 +102,10 @@ PanelWindow {
     }
 
     Connections {
-        target: Niri
+        target: Compositor
         function onKeyboardLayoutsChanged() {
-            if (root.primed && Niri.keyboardLayouts.names.length > 1)
-                root.show({ icon: "input-keyboard-symbolic", text: Niri.keyboardLayout })
+            if (root.primed && Compositor.keyboardLayouts.names.length > 1)
+                root.show({ icon: "input-keyboard-symbolic", text: Compositor.keyboardLayout })
         }
     }
 

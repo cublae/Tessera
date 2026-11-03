@@ -17,7 +17,7 @@ Singleton {
     property string open: ""
 
     // Where the open dropdown appears: the screen of the bar that was clicked,
-    // or the one niri says has focus when a keybinding asked.
+    // or the one the compositor says has focus when a keybinding asked.
     property var screen: null
 
     // The page the control center shows: `main`, `wifi`, `bluetooth`, ...
@@ -38,7 +38,7 @@ Singleton {
     }
 
     function focusedScreen(): var {
-        const name = Niri.focusedOutput
+        const name = Compositor.focusedOutput
         return Quickshell.screens.find(s => s.name === name) ?? Quickshell.screens[0] ?? null
     }
 

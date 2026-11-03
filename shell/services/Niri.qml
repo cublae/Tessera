@@ -66,7 +66,7 @@ Singleton {
         return windows.filter(w => w.workspace_id === workspace)
     }
 
-    function window(id: int): var {
+    function window(id: var): var {
         return windows.find(w => w.id === id) ?? null
     }
 
@@ -80,7 +80,7 @@ Singleton {
         })
     }
 
-    function focusWorkspace(id: int): void {
+    function focusWorkspace(id: var): void {
         dispatch({ FocusWorkspace: { reference: { Id: id } } })
     }
 
@@ -90,6 +90,14 @@ Singleton {
 
     function switchLayout(): void {
         dispatch({ SwitchLayout: { layout: "Next" } })
+    }
+
+    function screenshot(): void {
+        dispatch({ Screenshot: { show_pointer: false } })
+    }
+
+    function logOut(): void {
+        Quickshell.execDetached(["niri", "msg", "action", "quit", "--skip-confirmation"])
     }
 
     // Issue a one-shot request; `callback` gets the unwrapped `Ok` payload, or

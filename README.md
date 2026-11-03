@@ -1,10 +1,11 @@
 # Tessera
 
-Desktop shell для [niri](https://github.com/YaLTeR/niri) на
+Desktop shell для [niri](https://github.com/YaLTeR/niri) и
+[Hyprland](https://hypr.land) на
 [Quickshell](https://quickshell.org) (QML), оформленный в духе GNOME/Adwaita.
 Это [Manifold](https://github.com/cublae/Manifold), переписанный на Quickshell, с
 тем же функционалом, конфигом и командами. Состояние композитора берётся
-напрямую из niri IPC — Hyprland-специфичных зависимостей нет.
+напрямую из его IPC, а нужный композитор определяется при запуске.
 
 ![Рабочий стол](docs/desktop.png)
 
@@ -21,7 +22,8 @@ Desktop shell для [niri](https://github.com/YaLTeR/niri) на
 
 ## Установка
 
-Нужны **niri** (шелл читает `$NIRI_SOCKET`) и **Nix** с flakes.
+Нужны **niri** или **Hyprland** (шелл смотрит на `$NIRI_SOCKET` и
+`$HYPRLAND_INSTANCE_SIGNATURE`) и **Nix** с flakes.
 
 Попробовать поверх текущей сессии, из клона репозитория:
 
@@ -97,6 +99,31 @@ programs.tessera = {
 Чем при этом жертвуете: systemd-сервис перезапускает шелл, если тот упал, и
 упорядочивает его относительно `graphical-session.target`. Из автостарта niri
 падение означает сессию без панели до следующего входа.
+
+### Запуск без systemd, из автостарта Hyprland
+
+Выключите сервис (`programs.tessera.systemd.enable = false`) и добавьте запуск в
+конфиг Hyprland. В `hyprland.lua`:
+
+```lua
+hl.on("hyprland.start", function()
+    hl.exec_cmd("tessera")
+end)
+```
+
+В `hyprland.conf` (до 0.55) — `exec-once = tessera`.
+
+Остальное, что стоит знать на Hyprland:
+
+- Плавной смены темы нет: у Hyprland нет аналога `DoScreenTransition`, поэтому
+  `theme.transition` там ни на что не влияет.
+- Скриншот из центра управления — `slurp` и `grim`: снимок сохраняется в
+  `~/Pictures/Screenshots` и копируется в буфер обмена.
+- Индикатор `screencast` загорается на любой захват экрана, в том числе на
+  мгновение при скриншоте, и не различает, идут ли кадры.
+- Окна в special-воркспейсах в панели не показываются.
+- Сервер уведомлений может быть только один: пока работает swaync или mako,
+  Tessera свой не зарегистрирует. Их, как и waybar, стоит убрать из автостарта.
 
 Готовый пример настройки:
 
@@ -180,6 +207,15 @@ tessera quit
 
 Если шелл не запущен, команда так и скажет и завершится с ненулевым кодом, а не
 поднимет его: запуск — это `tessera` без аргументов, и только он.
+
+Для конфига Hyprland на Lua:
+
+```lua
+hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("tessera toggle launcher"))
+hl.bind("SUPER + V",     hl.dsp.exec_cmd("tessera toggle clipboard"))
+hl.bind("SUPER + N",     hl.dsp.exec_cmd("tessera toggle control-center"))
+hl.bind("SUPER + P",     hl.dsp.exec_cmd("tessera pick-color"))
+```
 
 Для конфига niri:
 
@@ -308,13 +344,13 @@ Home Manager не используется. Указывать нужно тол
 | `bar.modules.start` | `bar.modules.start` | `["launcher", "clipboard", "workspaces", "media"]` | Модули начальной секции, по порядку |
 | `bar.modules.center` | `bar.modules.center` | `["clock"]` | Модули центральной секции |
 | `bar.modules.end` | `bar.modules.end` | `["privacy", "screencast", "recording", "tray", "keyboard-layout", "notifications", "system-indicators"]` | Модули конечной секции |
-| `bar.outputs.<имя>.{start,center,end}` | `bar.outputs.<имя>.{start,center,end}` | `{}` | Раскладка для конкретного монитора. Ключ — имя коннектора из `niri msg outputs`. Секции, которых нет, берутся из `bar.modules`; несуществующее имя просто ни с чем не совпадёт |
+| `bar.outputs.<имя>.{start,center,end}` | `bar.outputs.<имя>.{start,center,end}` | `{}` | Раскладка для конкретного монитора. Ключ — имя коннектора из `niri msg outputs` или `hyprctl monitors`. Секции, которых нет, берутся из `bar.modules`; несуществующее имя просто ни с чем не совпадёт |
 
 Значения в списках модулей:
 
 | Модуль | Что делает |
 | --- | --- |
-| `workspaces` | Воркспейсы niri с иконками окон, клик и колесо переключают |
+| `workspaces` | Воркспейсы с иконками окон, клик и колесо переключают |
 | `focused-window` | Заголовок активного окна (на боковой панели — иконка) |
 | `clock` | Часы, клик открывает календарь |
 | `keyboard-layout` | Текущая раскладка, клик переключает |
@@ -337,7 +373,7 @@ Home Manager не используется. Указывать нужно тол
 | Ключ конфига | Опция Home Manager | По умолчанию | Что делает |
 | --- | --- | --- | --- |
 | `workspaces.perMonitor` | `workspaces.perMonitor` | `true` | Показывать только воркспейсы того монитора, на котором панель |
-| `workspaces.showEmpty` | `workspaces.showEmpty` | `false` | Показывать пустые воркспейсы. niri всегда держит один про запас, поэтому по умолчанию выключено; активный виден в любом случае |
+| `workspaces.showEmpty` | `workspaces.showEmpty` | `false` | Показывать пустые воркспейсы. niri всегда держит один про запас, поэтому по умолчанию выключено; активный виден в любом случае. Hyprland хранит только занятые и активный, так что там опция ничего не меняет |
 | `workspaces.labels` | `workspaces.labels` | `"index"` | Подпись кнопки: `index`, `name` или `none` |
 | `workspaces.showIcons` | `workspaces.showIcons` | `true` | Иконка на каждое окно воркспейса |
 | `workspaces.maxIcons` | `workspaces.maxIcons` | `4` | Сколько иконок рисовать, прежде чем остальные отбрасываются |
@@ -406,7 +442,7 @@ Home Manager не используется. Указывать нужно тол
 | `theme.accentFromWallpaper` | `theme.accentFromWallpaper` | `false` | Брать акцент из обоев вместо `accent`. Выбирается не самый большой по площади цвет, а самый заметный: крупнейшая область фотографии обычно небо или тень, и акцент из них не отличить от панели. С чёрно-белых обоев ничего не берётся, остаётся `accent` |
 | `theme.wallpaper` | `theme.wallpaper` | `""` | Путь к обоям для `accentFromWallpaper`. Пусто — шелл ищет сам: waypaper пишет ответ в свой конфиг, swww можно спросить. Протокола для этого в Wayland нет и композитор обоями не владеет, поэтому для других программ путь нужно указать явно |
 | `theme.radius` | `theme.radius` | `null` | Скругление углов панелей, лаунчера и контролов внутри них, в пикселях. `null` — брать у рабочего стола: правило `* { border-radius }` из `~/.config/gtk-4.0/gtk.css`, которое пишут туда генераторы тем, а если такого правила нет — квадратные углы. Отдельной опции GTK для скругления не существует, поэтому это единственный общесистемный источник. То, что задумано пилюлей (ползунки, точка непрочитанного), пилюлей и остаётся |
-| `theme.transition` | `theme.transition` | `250` | Миллисекунды, на которые экран замирает при переключении светлой/тёмной темы. niri держит текущий кадр и потом плавно переводит его в новый, так что смена выглядит растворением, а не одновременным морганием всех окон. Задержка должна покрывать самое медленное приложение, а не только Tessera. `0` выключает |
+| `theme.transition` | `theme.transition` | `250` | Миллисекунды, на которые экран замирает при переключении светлой/тёмной темы. niri держит текущий кадр и потом плавно переводит его в новый, так что смена выглядит растворением, а не одновременным морганием всех окон. Задержка должна покрывать самое медленное приложение, а не только Tessera. `0` выключает. Только для niri |
 | `theme.spacing` | `theme.spacing` | `6` | Базовый шаг отступов в пикселях; все паддинги кратны ему |
 | `theme.opacity` | `theme.opacity` | `1` | Непрозрачность фона панелей, 0..1 |
 | `theme.font` | `theme.font` | `""` | Шрифт; пусто — системный |
@@ -430,7 +466,7 @@ Home Manager не используется. Указывать нужно тол
 | --- | --- | --- |
 | `programs.tessera.enable` | `false` | Включить Tessera |
 | `programs.tessera.package` | пакет из этого флейка | Какой пакет ставить |
-| `programs.tessera.systemd.enable` | `true` | Запускать из systemd-юзер-сервиса, привязанного к `graphical-session.target`. Выключается ради автостарта niri — см. [раздел выше](#запуск-без-systemd-из-автостарта-niri) |
+| `programs.tessera.systemd.enable` | `true` | Запускать из systemd-юзер-сервиса, привязанного к `graphical-session.target`. Выключается ради автостарта композитора — см. разделы про [niri](#запуск-без-systemd-из-автостарта-niri) и [Hyprland](#запуск-без-systemd-из-автостарта-hyprland) |
 | `programs.tessera.niri.spawnAtStartup` | `false` | Добавить Tessera в `programs.niri.settings.spawn-at-startup`. Работает только с импортированным модулем niri, иначе сборка остановится с объяснением; для конфига, написанного руками, строка `spawn-at-startup "tessera"` пишется в `config.kdl` самостоятельно. systemd предпочтительнее: он перезапустит шелл после падения |
 | `programs.tessera.stylix.enable` | включён, если включён Stylix | Следовать Stylix: полярность и обои. Цвета и шрифт приходят сами, через его GTK-цель — при условии, что `theme.accent` не задан. Опции `theme.*` перебивают |
 | `programs.tessera.settings` | `{}` | Произвольный JSON поверх сгенерированного конфига. Для ключей, у которых своей опции пока нет |

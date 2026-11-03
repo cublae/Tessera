@@ -176,7 +176,7 @@ PopupLayer {
                         subtitle: I18n.tr("Region")
                         onToggled: {
                             Shell.close()
-                            Niri.dispatch({ Screenshot: { show_pointer: false } })
+                            Compositor.screenshot()
                         }
                     }
 

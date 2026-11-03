@@ -8,7 +8,7 @@ Item {
 
     property var bar
 
-    readonly property var window: Niri.focusedWindow
+    readonly property var window: Compositor.focusedWindow
     readonly property bool shown: window !== null
     readonly property var cfg: Config.c.focusedWindow
 

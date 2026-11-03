@@ -12,7 +12,7 @@ import "osd"
 import "desktop"
 import "picker"
 
-// Tessera -- a desktop shell for niri.
+// Tessera -- a desktop shell for niri and Hyprland.
 //
 // Per-output surfaces -- the bar, notification popups, the overlay, the
 // desktop widgets -- are built for every output, or the first one only when

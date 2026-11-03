@@ -14,7 +14,7 @@ ColumnLayout {
 
     readonly property var actions: [
         { icon: "system-lock-screen-symbolic", label: I18n.tr("Lock"), argv: ["loginctl", "lock-session"] },
-        { icon: "system-log-out-symbolic", label: I18n.tr("Log out"), argv: ["niri", "msg", "action", "quit", "--skip-confirmation"] },
+        { icon: "system-log-out-symbolic", label: I18n.tr("Log out"), run: () => Compositor.logOut() },
         { icon: "weather-clear-night-symbolic", label: I18n.tr("Suspend"), argv: ["systemctl", "suspend"] },
         { icon: "system-reboot-symbolic", label: I18n.tr("Restart"), argv: ["systemctl", "reboot"] },
         { icon: "system-shutdown-symbolic", label: I18n.tr("Power off"), argv: ["systemctl", "poweroff"] },
@@ -39,7 +39,8 @@ ColumnLayout {
                 title: modelData.label
                 onClicked: {
                     Shell.close()
-                    Quickshell.execDetached(modelData.argv)
+                    if (modelData.run) modelData.run()
+                    else Quickshell.execDetached(modelData.argv)
                 }
             }
         }

@@ -29,9 +29,9 @@ PanelWindow {
 
     readonly property bool bare: {
         if (editing) return true
-        const active = Niri.workspaces.find(w => w.output === output && w.is_active)
+        const active = Compositor.workspaces.find(w => w.output === output && w.is_active)
         if (!active) return false
-        return !Niri.windows.some(w => w.workspace_id === active.id)
+        return !Compositor.windows.some(w => w.workspace_id === active.id)
     }
 
     readonly property var players: Mpris.players.values

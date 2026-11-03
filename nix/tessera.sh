@@ -20,7 +20,7 @@ case $SHELL_DIR in @*) SHELL_DIR="$(cd "$(dirname "$0")/../shell" && pwd)" ;; es
 
 usage() {
   cat <<'EOF'
-tessera — a desktop shell for niri
+tessera — a desktop shell for niri and Hyprland
 
 Running `tessera` with no arguments starts the shell. Running it again while
 an instance is up forwards the command to it:
@@ -76,7 +76,10 @@ start() {
     export QS_NO_RELOAD_POPUP=1
   fi
 
-  exec "$QS" -p "$SHELL_DIR" --no-duplicate
+  # Hyprland hangs up after every reply, by design, and Quickshell logs each one
+  # as a socket error: several lines a second that only ever bury real problems.
+  # The services report the failures that matter themselves.
+  exec "$QS" -p "$SHELL_DIR" --no-duplicate --log-rules "quickshell.io.socket.warning=false"
 }
 
 call() {

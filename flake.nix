@@ -1,5 +1,5 @@
 {
-  description = "Tessera — a desktop shell for the niri compositor, built on Quickshell";
+  description = "Tessera — a desktop shell for niri and Hyprland, built on Quickshell";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
