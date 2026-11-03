@@ -46,10 +46,9 @@ let
 
   /* What Stylix has to say that does not already reach the shell on its own.
 
-     Most of it does. Tessera draws with libadwaita's named colours, and
-     Stylix's GTK target writes those into ~/.config/gtk-4.0/gtk.css -- the
-     whole palette, accent included -- while `gtk-font-name` in settings.ini
-     carries the font. The shell reads both files itself, the way GTK would, so the colours and the typeface follow Stylix without a line of
+     Most of it does. Tessera builds its Material scheme from one accent, and
+     Stylix's GTK target writes that into ~/.config/gtk-4.0/gtk.css -- while `gtk-font-name` in settings.ini
+     carries the font. The shell reads both files itself, the way GTK would, so the accent and the typeface follow Stylix without a line of
      configuration. What does not follow is the polarity, which the shell would
      otherwise ask the desktop portal about and could answer differently from
      the palette it is painting with, and the wallpaper, which the shell
@@ -281,8 +280,8 @@ in
         Off on its own when Stylix is not in the configuration, so this needs
         no attention either way.
 
-        Most of Stylix already reaches the shell without help. Tessera draws
-        with libadwaita's named colours, which Stylix's GTK target writes
+        Most of Stylix already reaches the shell without help. Tessera builds
+        its Material scheme from one accent, which Stylix's GTK target writes
         into `~/.config/gtk-4.0/gtk.css`, and the font comes through
         `gtk-font-name` next to it -- the shell reads both itself, the way any
         GTK application would. The one thing to leave alone for that to work is
@@ -404,8 +403,7 @@ in
         default = null;
         example = "auto";
         description = ''
-          Colour scheme. `auto` follows the desktop preference, which is what
-          libadwaita applications already do.
+          Colour scheme. `auto` follows the desktop preference.
         '';
       };
 
@@ -440,10 +438,10 @@ in
       accent = mkOption {
         type = types.nullOr types.str;
         default = null;
-        example = "#3584e4";
+        example = "#6750a4";
         description = ''
-          Accent colour, as a hex string. Overrides the libadwaita accent for
-          Tessera's own surfaces only.
+          Seed of the Material 3 colour scheme, as a hex string, for Tessera's
+          own surfaces only. Left unset, the desktop's accent is used.
         '';
       };
 
@@ -467,13 +465,8 @@ in
         default = null;
         example = 12;
         description = ''
-          Corner radius in pixels for panels, the launcher and the controls in
-          them.
-
-          Left unset, Tessera follows the desktop: the blanket
-          `* { border-radius }` rule that theme generators write into
-          {file}`~/.config/gtk-4.0/gtk.css`, and square corners when there is
-          no such rule.
+          Largest corner radius in pixels, used by panels and tiles; Material's
+          smaller shapes scale from it. Left unset it is 28, as on Android.
         '';
       };
 

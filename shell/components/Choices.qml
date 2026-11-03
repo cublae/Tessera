@@ -36,10 +36,12 @@ ColumnLayout {
                 Layout.preferredWidth: 1
                 minHeight: 30
                 active: root.current === modelData.value
+                activeColor: Theme.secondaryContainer
                 onClicked: root.chosen(modelData.value)
 
                 Txt {
                     text: modelData.label
+                    color: root.current === modelData.value ? Theme.secondaryContainerFg : Theme.fg
                 }
             }
         }

@@ -91,10 +91,8 @@ PanelWindow {
 
         width: Math.max(180, list.implicitWidth + 12)
         height: list.implicitHeight + 12
-        radius: Theme.radiusLg
+        radius: Theme.radiusMd
         color: Theme.popoverBg
-        border.color: Theme.borders
-        border.width: 1
 
         x: {
             if (position === "left") return 4
@@ -223,7 +221,7 @@ PanelWindow {
             Txt {
                 Layout.fillWidth: true
                 text: menuRow.text
-                color: Theme.named("popover_fg_color")
+                color: Theme.fg
             }
 
             Icon {

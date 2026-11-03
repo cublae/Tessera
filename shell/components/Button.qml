@@ -4,8 +4,8 @@ import qs.services
 
 // A flat button: the shape every clickable thing in the shell takes.
 //
-// Transparent at rest, a wash of the text colour on hover, a stronger one when
-// pressed or `active`. Children are laid out in a row, or a column when
+// Transparent at rest, with Material's state layers: a wash of the text colour
+// on hover, a stronger one when pressed or `active`. Children are laid out in a row, or a column when
 // `vertical` -- which is what a module on a side bar wants.
 Rectangle {
     id: root
@@ -15,11 +15,11 @@ Rectangle {
     property string tooltip: ""
     property real padding: Theme.spacing
     property real spacing: 6
-    property real minHeight: 24
+    property real minHeight: 28
     // Stretch the content across the button instead of centring it, for rows
     // whose text should elide at the button's edge.
     property bool fill: false
-    property color activeColor: Theme.alpha(Theme.fg, 0.14)
+    property color activeColor: Theme.alpha(Theme.fg, 0.12)
     property color hoverColor: Theme.alpha(Theme.fg, 0.08)
     readonly property bool hovered: area.containsMouse
     readonly property bool pressed: area.pressed
@@ -34,7 +34,7 @@ Rectangle {
 
     implicitWidth: Math.max(minHeight, contentWidth)
     implicitHeight: Math.max(minHeight, layout.implicitHeight + (vertical ? padding * 2 : 4))
-    radius: Theme.radiusMd
+    radius: Math.min(height / 2, Theme.radiusLg)
     opacity: enabled ? 1 : 0.45
     color: pressed || active ? activeColor : hovered ? hoverColor : "transparent"
     border.width: activeFocus ? 2 : 0

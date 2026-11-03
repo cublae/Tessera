@@ -18,7 +18,7 @@ Item {
     signal moved(real value)
 
     implicitWidth: 200
-    implicitHeight: 32
+    implicitHeight: 44
     activeFocusOnTab: true
 
     readonly property real shown: Math.min(1, Math.max(0, value))
@@ -35,7 +35,7 @@ Item {
 
         anchors.fill: parent
         radius: height / 2
-        color: Theme.alpha(Theme.fg, 0.1)
+        color: Theme.fieldBg
         border.width: root.activeFocus ? 2 : 0
         border.color: Theme.accent
 
@@ -52,7 +52,7 @@ Item {
         anchors.leftMargin: (root.height - size) / 2
         anchors.verticalCenter: parent.verticalCenter
         name: root.icon
-        size: 16
+        size: 20
         color: Theme.accentFg
     }
 

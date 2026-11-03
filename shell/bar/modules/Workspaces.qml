@@ -77,20 +77,19 @@ GridLayout {
             vertical: root.bar.vertical
             padding: 4
             spacing: 3
-            minHeight: 24
-            radius: Theme.radiusSm
-            implicitWidth: Math.max(w.is_focused ? 34 : 24, contentWidth)
+            minHeight: 28
+            implicitWidth: Math.max(w.is_focused ? 40 : 28, contentWidth)
             opacity: empty && !w.is_active && !w.is_focused ? 0.45 : 1
             tooltip: root.tooltip(w, modelData.windows)
 
             color: {
                 if (w.is_focused) return Theme.accentBg
                 if (w.is_urgent) return Theme.alpha(Theme.destructive, 0.2)
-                if (w.is_active) return Theme.alpha(Theme.accent, 0.15)
+                if (w.is_active) return Theme.secondaryContainer
                 return pressed ? activeColor : hovered ? hoverColor : "transparent"
             }
 
-            readonly property color ink: w.is_focused ? Theme.accentFg : w.is_urgent ? Theme.destructive : w.is_active ? Theme.accent : Theme.fg
+            readonly property color ink: w.is_focused ? Theme.accentFg : w.is_urgent ? Theme.destructive : w.is_active ? Theme.secondaryContainerFg : Theme.fg
 
             onClicked: Compositor.focusWorkspace(w.id)
 

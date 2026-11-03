@@ -126,11 +126,9 @@ PanelWindow {
 
         anchors.centerIn: parent
         width: row.implicitWidth + 32
-        height: row.implicitHeight + 24
-        radius: Theme.radiusLg
-        color: Theme.panelBg
-        border.color: Theme.borders
-        border.width: 1
+        height: row.implicitHeight + 28
+        radius: Math.min(height / 2, Theme.radiusLg)
+        color: Theme.cardBg
         opacity: root.showing ? 1 : 0
 
         Behavior on opacity {
@@ -171,10 +169,10 @@ PanelWindow {
 
                 visible: root.level >= 0
                 Layout.preferredWidth: 180
-                Layout.preferredHeight: 6
+                Layout.preferredHeight: 8
                 readonly property real r: Math.min(height / 2, Config.c.osd.barRadius ?? Theme.radius)
                 radius: r
-                color: Theme.alpha(Theme.fg, 0.15)
+                color: Theme.fieldBg
 
                 Rectangle {
                     width: parent.width * Math.max(0, root.level)

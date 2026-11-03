@@ -44,19 +44,19 @@ Rectangle {
     }
 
     implicitWidth: 360
-    implicitHeight: column.implicitHeight + 24
+    implicitHeight: column.implicitHeight + 32
     radius: Theme.radiusLg
-    color: compact ? Theme.panelBg : Theme.cardBg
-    border.width: critical ? 2 : compact ? 1 : 0
-    border.color: critical ? Theme.destructive : Theme.borders
+    color: Theme.cardBg
+    border.width: critical ? 2 : 0
+    border.color: Theme.destructive
     opacity: low ? 0.9 : 1
 
     ColumnLayout {
         id: column
 
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 6
+        anchors.margins: 16
+        spacing: 8
 
         RowLayout {
             Layout.fillWidth: true
@@ -92,14 +92,14 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 12
 
             // The notification's own picture when it has one big enough to be
             // a picture; otherwise the sender's icon.
             Item {
                 Layout.alignment: Qt.AlignTop
-                Layout.preferredWidth: picture.visible ? Math.min(76, Math.max(54, picture.implicitWidth * 54 / Math.max(1, picture.implicitHeight))) : 32
-                Layout.preferredHeight: picture.visible ? 54 : 32
+                Layout.preferredWidth: picture.visible ? Math.min(76, Math.max(54, picture.implicitWidth * 54 / Math.max(1, picture.implicitHeight))) : 40
+                Layout.preferredHeight: picture.visible ? 54 : 40
 
                 Image {
                     id: picture
@@ -113,10 +113,18 @@ Rectangle {
                     layer.enabled: true
                 }
 
-                Icon {
+                // The sender's icon sits on a round badge, the way Android shows it.
+                Rectangle {
                     visible: !picture.visible
                     anchors.fill: parent
-                    size: 32
+                    radius: width / 2
+                    color: Theme.primaryContainer
+                }
+
+                Icon {
+                    visible: !picture.visible
+                    anchors.centerIn: parent
+                    size: 24
                     name: picture.status === Image.Ready ? "" : Notifs.appIconOf(root.notification)
                     source: picture.status === Image.Ready ? root.notification.image : ""
                     fallback: "dialog-information-symbolic"
@@ -132,7 +140,7 @@ Rectangle {
                     visible: text !== ""
                     text: root.notification.summary
                     textFormat: Text.PlainText
-                    font.weight: Font.Bold
+                    font.weight: Font.Medium
                     wrapMode: Text.Wrap
                     elide: Text.ElideNone
                 }
@@ -163,12 +171,14 @@ Rectangle {
 
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    minHeight: 30
-                    color: hovered ? Theme.alpha(Theme.fg, 0.14) : Theme.alpha(Theme.fg, 0.08)
+                    minHeight: 36
+                    color: hovered ? Qt.lighter(Theme.secondaryContainer, 1.15) : Theme.secondaryContainer
                     onClicked: modelData.invoke()
 
                     Txt {
                         text: modelData.text
+                        color: Theme.secondaryContainerFg
+                        font.weight: Font.Medium
                     }
                 }
             }

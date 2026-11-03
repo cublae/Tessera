@@ -7,8 +7,8 @@ import qs.services
 // A dropdown: a panel coming out of the bar, over a transparent layer that
 // covers the rest of the screen so a click anywhere else closes it.
 //
-// The layer respects the bar's exclusive zone, so its edge *is* the bar's edge
-// and the panel can sit flush against it with its bar-side corners squared.
+// The layer respects the bar's exclusive zone, so its edge *is* the bar's edge:
+// the panel is a sheet floating a `gap` off it and off the screen's edges.
 // `align` positions it along the bar -- a clock in the centre section wants
 // its calendar centred. `tall` stretches it across the screen, for the
 // notification list; `floating` centres it on screen with every corner round,
@@ -22,7 +22,8 @@ PanelWindow {
     property bool floating: false
     property bool keyboard: false
     property real panelWidth: 0
-    property real padding: 16
+    property real padding: 20
+    readonly property real gap: floating ? 0 : 8
 
     // Called on Escape before the dropdown closes; returning true keeps it
     // open, for a page that wants to step back first.
@@ -71,7 +72,8 @@ PanelWindow {
             id: slide
 
             duration: Theme.duration
-            easing.type: Easing.OutCubic
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.easing
             onRunningChanged: {
                 if (!running && root.progress === 0) root.mapped = false
             }
@@ -107,15 +109,15 @@ PanelWindow {
         readonly property real shadow: 24
 
         clip: !root.floating
-        width: panel.width + (root.vertical ? shadow : shadow * 2)
-        height: root.tall && !root.vertical ? root.height : panel.height + (root.vertical ? shadow * 2 : shadow)
+        width: panel.width + (root.vertical ? shadow + root.gap : shadow * 2)
+        height: root.tall && !root.vertical ? root.height : panel.height + (root.vertical ? shadow * 2 : shadow + root.gap)
 
         x: {
             if (root.floating) return (root.width - width) / 2
             if (root.position === "left") return 0
             if (root.position === "right") return root.width - width
-            if (root.align === "start") return -shadow
-            if (root.align === "end") return root.width - width + shadow
+            if (root.align === "start") return root.gap - shadow
+            if (root.align === "end") return root.width - width + shadow - root.gap
             return (root.width - width) / 2
         }
         y: {
@@ -123,8 +125,8 @@ PanelWindow {
             if (root.tall && !root.vertical) return 0
             if (root.position === "top") return 0
             if (root.position === "bottom") return root.height - height
-            if (root.align === "start") return -shadow
-            if (root.align === "end") return root.height - height + shadow
+            if (root.align === "start") return root.gap - shadow
+            if (root.align === "end") return root.height - height + shadow - root.gap
             return (root.height - height) / 2
         }
 
@@ -138,35 +140,34 @@ PanelWindow {
 
         RectangularShadow {
             x: panel.x
-            y: panel.y + (root.floating ? 4 : 2)
+            y: panel.y + 4
             width: panel.width
             height: panel.height
             opacity: panel.opacity
             scale: panel.scale
             radius: Theme.radiusLg
-            blur: root.floating ? 32 : 16
-            spread: 2
-            color: Theme.alpha(Theme.shade, Theme.dark ? 2 : 3)
+            blur: root.floating ? 32 : 20
+            color: Theme.shadow
         }
 
         Rectangle {
             id: panel
 
-            readonly property real offset: (1 - root.progress) * (root.vertical ? width : height)
+            readonly property real offset: (1 - root.progress) * ((root.vertical ? width : height) + root.gap)
 
             width: root.panelWidth > 0 ? root.panelWidth : body.implicitWidth + root.padding * 2
-            height: root.tall && !root.vertical ? root.height : body.implicitHeight + root.padding * 2
+            height: root.tall && !root.vertical ? root.height - root.gap * 2 : body.implicitHeight + root.padding * 2
 
             x: {
                 if (root.floating) return holder.shadow
-                if (root.position === "left") return -offset
+                if (root.position === "left") return root.gap - offset
                 if (root.position === "right") return holder.shadow + offset
                 return holder.shadow
             }
             y: {
                 if (root.floating) return holder.shadow
-                if (root.tall && !root.vertical) return 0
-                if (root.position === "top") return -offset
+                if (root.tall && !root.vertical) return root.gap
+                if (root.position === "top") return root.gap - offset
                 if (root.position === "bottom") return holder.shadow + offset
                 return holder.shadow
             }
@@ -175,15 +176,7 @@ PanelWindow {
             scale: root.floating ? 0.96 + 0.04 * root.progress : 1
 
             color: Theme.panelBg
-            readonly property real r: Theme.radiusLg
-            readonly property bool squareTop: !root.floating && (root.position === "top" || root.tall && !root.vertical)
-            readonly property bool squareBottom: !root.floating && (root.position === "bottom" || root.tall && !root.vertical)
-            readonly property bool squareLeft: !root.floating && root.position === "left"
-            readonly property bool squareRight: !root.floating && root.position === "right"
-            topLeftRadius: squareTop || squareLeft ? 0 : r
-            topRightRadius: squareTop || squareRight ? 0 : r
-            bottomLeftRadius: squareBottom || squareLeft ? 0 : r
-            bottomRightRadius: squareBottom || squareRight ? 0 : r
+            radius: Theme.radiusLg
 
             FocusScope {
                 id: scope

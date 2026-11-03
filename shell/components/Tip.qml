@@ -72,7 +72,7 @@ Item {
                 textFormat: Text.StyledText
                 elide: Text.ElideNone
                 em: 0.92
-                color: Theme.named("popover_fg_color")
+                color: Theme.fg
             }
         }
     }

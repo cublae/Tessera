@@ -17,9 +17,10 @@ Button {
 
     Layout.fillWidth: true
     fill: true
-    padding: 10
-    minHeight: subtitle ? 44 : 36
-    color: current ? Theme.alpha(Theme.accent, 0.15) : pressed ? activeColor : hovered ? hoverColor : "transparent"
+    minHeight: subtitle ? 56 : 44
+    padding: 16
+    radius: Theme.radiusMd
+    color: current ? Theme.secondaryContainer : pressed ? activeColor : hovered ? hoverColor : "transparent"
 
     RowLayout {
         Layout.fillWidth: true
@@ -28,7 +29,7 @@ Button {
         Icon {
             name: root.icon
             source: root.iconSource
-            color: root.current ? Theme.accent : Theme.fg
+            color: root.current ? Theme.secondaryContainerFg : Theme.fg
         }
 
         ColumnLayout {
@@ -38,7 +39,7 @@ Button {
             Txt {
                 Layout.fillWidth: true
                 text: root.title
-                color: root.current ? Theme.accent : Theme.fg
+                color: root.current ? Theme.secondaryContainerFg : Theme.fg
             }
 
             Txt {
@@ -59,7 +60,7 @@ Button {
         Icon {
             visible: root.current
             name: "object-select-symbolic"
-            color: Theme.accent
+            color: Theme.secondaryContainerFg
         }
 
         RowLayout {

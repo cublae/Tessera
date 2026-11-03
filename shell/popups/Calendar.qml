@@ -43,8 +43,7 @@ ColumnLayout {
         IconButton {
             icon: "pan-start-symbolic"
             tooltip: I18n.tr("Previous month")
-            minHeight: 28
-            radius: Theme.radiusSm
+            minHeight: 32
             onClicked: root.step(-1)
         }
 
@@ -66,14 +65,14 @@ ColumnLayout {
         IconButton {
             icon: "pan-end-symbolic"
             tooltip: I18n.tr("Next month")
-            minHeight: 28
-            radius: Theme.radiusSm
+            minHeight: 32
             onClicked: root.step(1)
         }
     }
 
     GridLayout {
         columns: 7
+        Layout.alignment: Qt.AlignHCenter
         rowSpacing: 2
         columnSpacing: 2
 
@@ -84,11 +83,11 @@ ColumnLayout {
                 required property int index
                 readonly property int day: (root.start - 1 + index) % 7 + 1
 
-                Layout.preferredWidth: 32
+                Layout.preferredWidth: 36
                 horizontalAlignment: Text.AlignHCenter
                 text: Qt.locale().dayName(day % 7, 1).slice(0, 1).toUpperCase()
                 em: 0.85
-                font.weight: Font.Bold
+                font.weight: Font.Medium
                 color: root.isWeekend(day) ? Theme.destructive : Theme.fg
                 opacity: root.isWeekend(day) ? 1 : Theme.dimOpacity
                 bottomPadding: 4
@@ -108,9 +107,9 @@ ColumnLayout {
                 readonly property bool other: date.getMonth() !== root.viewMonth
                 readonly property bool isToday: date.toDateString() === root.today.toDateString()
 
-                Layout.preferredWidth: 32
-                Layout.preferredHeight: 30
-                radius: Theme.radiusSm
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                radius: 18
                 color: isToday ? Theme.accentBg : "transparent"
                 opacity: other ? (isToday ? 0.5 : 0.35) : 1
 
@@ -118,7 +117,7 @@ ColumnLayout {
                     anchors.centerIn: parent
                     text: cell.date.getDate()
                     em: 0.95
-                    font.weight: cell.isToday ? Font.Bold : Font.Normal
+                    font.weight: cell.isToday ? Font.Medium : Font.Normal
                     color: cell.isToday ? Theme.accentFg : root.isWeekend(cell.date.getDay() || 7) ? Theme.destructive : Theme.fg
                 }
             }

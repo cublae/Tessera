@@ -137,7 +137,7 @@ PopupLayer {
                     width: list.width
                     height: 52
                     radius: Theme.radiusMd
-                    color: current ? Theme.alpha(Theme.accent, 0.15) : mouse.containsMouse ? Theme.alpha(Theme.fg, 0.06) : "transparent"
+                    color: current ? Theme.secondaryContainer : mouse.containsMouse ? Theme.alpha(Theme.fg, 0.06) : "transparent"
 
                     MouseArea {
                         id: mouse

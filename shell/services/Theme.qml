@@ -3,17 +3,16 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../lib/material.js" as Material
 
 // Colours, metrics and motion.
 //
-// Tessera draws with libadwaita's palette -- the named colours every GNOME
-// application is written against -- so it sits next to them as one of them.
-// Qt has no libadwaita, so the palette is kept here, and the same sources GTK
-// would read are read directly:
+// Tessera follows Material 3: every colour is a role in a scheme generated from
+// one seed (see lib/material.js), and shape and motion use its scale. The seed
+// and the rest of the taste come from what the desktop already says:
 //
 //   - `~/.config/gtk-4.0/gtk.css`, where theme generators such as Stylix write
-//     `@define-color window_bg_color ...` for the whole palette, and a blanket
-//     `* { border-radius }` that is the only desktop-wide answer to rounding;
+//     `@define-color accent_bg_color ...`, for the seed;
 //   - `~/.config/gtk-4.0/settings.ini`, for the font and the animation switch;
 //   - the desktop portal, for the light/dark preference and GNOME's accent.
 //
@@ -76,50 +75,6 @@ Singleton {
 
     // -- palette ------------------------------------------------------------
 
-    readonly property var adwaitaLight: ({
-        window_bg_color: "#fafafb",
-        window_fg_color: Qt.rgba(0, 0, 6 / 255, 0.8),
-        view_bg_color: "#ffffff",
-        view_fg_color: Qt.rgba(0, 0, 6 / 255, 0.8),
-        card_bg_color: "#ffffff",
-        card_fg_color: Qt.rgba(0, 0, 6 / 255, 0.8),
-        popover_bg_color: "#ffffff",
-        popover_fg_color: Qt.rgba(0, 0, 6 / 255, 0.8),
-        headerbar_bg_color: "#ffffff",
-        accent_bg_color: "#3584e4",
-        accent_fg_color: "#ffffff",
-        accent_color: "#1c71d8",
-        destructive_color: "#c01c28",
-        destructive_bg_color: "#e01b24",
-        destructive_fg_color: "#ffffff",
-        success_color: "#1b8553",
-        warning_color: "#9c6e03",
-        shade_color: Qt.rgba(0, 0, 6 / 255, 0.07),
-        borders: Qt.rgba(0, 0, 6 / 255, 0.15),
-    })
-
-    readonly property var adwaitaDark: ({
-        window_bg_color: "#222226",
-        window_fg_color: "#ffffff",
-        view_bg_color: "#1d1d20",
-        view_fg_color: "#ffffff",
-        card_bg_color: Qt.rgba(1, 1, 1, 0.08),
-        card_fg_color: "#ffffff",
-        popover_bg_color: "#36363a",
-        popover_fg_color: "#ffffff",
-        headerbar_bg_color: "#2e2e32",
-        accent_bg_color: "#3584e4",
-        accent_fg_color: "#ffffff",
-        accent_color: "#78aeed",
-        destructive_color: "#ff7b63",
-        destructive_bg_color: "#c01c28",
-        destructive_fg_color: "#ffffff",
-        success_color: "#8ff0a4",
-        warning_color: "#f8e45c",
-        shade_color: Qt.rgba(0, 0, 6 / 255, 0.25),
-        borders: Qt.rgba(1, 1, 1, 0.15),
-    })
-
     // `@define-color` rules out of the user's GTK stylesheet.
     property var gtkColors: ({})
 
@@ -128,12 +83,6 @@ Singleton {
 
     // The accent taken from the wallpaper, when `theme.accentFromWallpaper` asks.
     property var wallpaperAccent: null
-
-    function named(name: string): color {
-        const base = dark ? adwaitaDark : adwaitaLight
-        const value = gtkColors[name]
-        return value !== undefined ? value : base[name]
-    }
 
     // The accent to override everything else with, or null to follow the desktop.
     readonly property var accentOverride: {
@@ -147,33 +96,34 @@ Singleton {
         return configured
     }
 
-    readonly property color bg: named("window_bg_color")
-    readonly property color fg: named("window_fg_color")
-    readonly property color viewBg: named("view_bg_color")
-    readonly property color viewFg: named("view_fg_color")
-    readonly property color cardBg: named("card_bg_color")
-    readonly property color popoverBg: named("popover_bg_color")
-    readonly property color headerbarBg: named("headerbar_bg_color")
-    readonly property color destructive: named("destructive_color")
-    readonly property color warning: named("warning_color")
-    readonly property color success: named("success_color")
-    readonly property color shade: named("shade_color")
-    readonly property color borders: named("borders")
+    // Material's own baseline, for a desktop with no opinion.
+    readonly property color seed: accentOverride || gtkColors.accent_bg_color || portalAccent || "#6750a4"
+    readonly property var scheme: Material.scheme(seed.r, seed.g, seed.b, dark)
 
-    // `accentBg` fills buttons; `accent` tints text and icons.
-    readonly property color accentBg: {
-        if (accentOverride) return accentOverride
-        if (gtkColors.accent_bg_color !== undefined) return gtkColors.accent_bg_color
-        if (portalAccent) return portalAccent
-        return named("accent_bg_color")
-    }
-    readonly property color accentFg: named("accent_fg_color")
-    readonly property color accent: {
-        if (accentOverride) return accentOverride
-        if (gtkColors.accent_color !== undefined) return gtkColors.accent_color
-        if (portalAccent) return dark ? Qt.lighter(portalAccent, 1.35) : Qt.darker(portalAccent, 1.15)
-        return named("accent_color")
-    }
+    // Surfaces, from the panel up: each thing resting on another is a tone lighter.
+    readonly property color bg: scheme.surfaceContainer
+    readonly property color cardBg: scheme.surfaceContainerHigh
+    readonly property color popoverBg: scheme.surfaceContainerHigh
+    readonly property color fieldBg: scheme.surfaceContainerHighest
+    readonly property color fg: scheme.onSurface
+    readonly property color fgVariant: scheme.onSurfaceVariant
+    readonly property color borders: scheme.outlineVariant
+    readonly property color outline: scheme.outline
+
+    // `accentBg` fills what is on; `accent` tints text and icons.
+    readonly property color accentBg: scheme.primary
+    readonly property color accentFg: scheme.onPrimary
+    readonly property color accent: scheme.primary
+    readonly property color primaryContainer: scheme.primaryContainer
+    readonly property color primaryContainerFg: scheme.onPrimaryContainer
+    // The quieter selection: a list's current row, a tonal button.
+    readonly property color secondaryContainer: scheme.secondaryContainer
+    readonly property color secondaryContainerFg: scheme.onSecondaryContainer
+
+    readonly property color destructive: scheme.error
+    readonly property color warning: scheme.warning
+    readonly property color success: scheme.success
+    readonly property color shadow: Qt.rgba(0, 0, 0, dark ? 0.5 : 0.25)
 
     function alpha(c: color, a: real): color {
         return Qt.rgba(c.r, c.g, c.b, c.a * a)
@@ -189,16 +139,13 @@ Singleton {
 
     // -- metrics ------------------------------------------------------------
 
-    // The blanket radius from gtk.css, or null.
-    property var gtkRadius: null
-
-    // `theme.radius` wins; with nothing set the shell follows the user's GTK
-    // stylesheet, and failing that squares everything off. Anything that is a
-    // pill by design -- sliders, the unread dot -- stays one either way.
-    readonly property real radius: Math.min(32, Math.max(0, Config.c.theme.radius ?? gtkRadius ?? 0))
+    // Material's shape scale: extra large for sheets and tiles, large for cards
+    // inside them, medium for rows. `theme.radius` scales the lot, 0 squaring it
+    // off; anything that is a pill by design -- sliders, the unread dot -- stays one.
+    readonly property real radius: Math.min(32, Math.max(0, Config.c.theme.radius ?? 28))
     readonly property real radiusLg: radius
-    readonly property real radiusMd: Math.max(0, radius - 4)
-    readonly property real radiusSm: Math.max(0, radius - 6)
+    readonly property real radiusMd: Math.round(radius * 4 / 7)
+    readonly property real radiusSm: Math.round(radius * 3 / 7)
 
     // Base spacing unit; module padding is a multiple of it.
     readonly property real spacing: Math.min(24, Math.max(0, Config.c.theme.spacing))
@@ -228,7 +175,8 @@ Singleton {
     readonly property bool animate: Config.c.animations.enabled && systemAnimations
     readonly property int duration: animate ? Math.min(1000, Math.max(0, Config.c.animations.duration)) : 0
     readonly property int fast: animate ? 150 : 0
-    readonly property var easing: [0.25, 0.46, 0.45, 0.94, 1, 1]
+    // Material's emphasized curve: leaves fast and settles slowly.
+    readonly property var easing: [0.2, 0, 0, 1, 1, 1]
 
     // -- sources ------------------------------------------------------------
 
@@ -255,7 +203,7 @@ Singleton {
         }
 
         // mix(), shade() and named CSS colours are rare in generated sheets and
-        // left to the Adwaita fallback.
+        // simply count as unset.
         return undefined
     }
 
@@ -268,12 +216,6 @@ Singleton {
             if (value !== undefined) colors[match[1]] = value
         }
         gtkColors = colors
-
-        // The last blanket rule wins, the same way it would in the cascade.
-        const rule = /(^|[},])\s*\*\s*\{[^}]*?border-radius:\s*([0-9]+(?:\.[0-9]+)?)px/g
-        let radius = null
-        while ((match = rule.exec(css)) !== null) radius = Number(match[2])
-        gtkRadius = radius
     }
 
     function readSettings(ini: string): void {
@@ -294,10 +236,7 @@ Singleton {
         printErrors: false
         onFileChanged: reload()
         onLoaded: root.readGtkCss(text())
-        onLoadFailed: {
-            root.gtkColors = {}
-            root.gtkRadius = null
-        }
+        onLoadFailed: root.gtkColors = {}
     }
 
     FileView {

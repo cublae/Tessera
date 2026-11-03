@@ -17,7 +17,7 @@ PopupLayer {
     name: "control-center"
     align: "end"
     keyboard: true
-    panelWidth: 352
+    panelWidth: 420
 
     readonly property string page: Shell.ccPage
 
@@ -73,8 +73,8 @@ PopupLayer {
                     Rectangle {
                         visible: Battery.available
                         implicitWidth: chip.implicitWidth + 20
-                        implicitHeight: 30
-                        radius: 15
+                        implicitHeight: 32
+                        radius: 16
                         color: Theme.alpha(Theme.fg, 0.08)
 
                         RowLayout {
@@ -103,7 +103,6 @@ PopupLayer {
 
                     IconButton {
                         icon: "system-shutdown-symbolic"
-                        radius: 15
                         color: hovered ? Theme.alpha(Theme.fg, 0.14) : Theme.alpha(Theme.fg, 0.08)
                         tooltip: I18n.tr("Session")
                         onClicked: root.show("session")

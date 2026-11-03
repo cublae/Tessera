@@ -36,7 +36,7 @@ PopupLayer {
 
     ColumnLayout {
         width: root.panelWidth - root.padding * 2
-        height: root.vertical ? implicitHeight : root.height - root.padding * 2
+        height: root.vertical ? implicitHeight : root.height - root.gap * 2 - root.padding * 2
         spacing: 8
 
         RowLayout {
@@ -46,8 +46,8 @@ PopupLayer {
             Txt {
                 Layout.fillWidth: true
                 text: I18n.tr("Notifications")
-                font.weight: Font.Bold
-                em: 1.05
+                font.weight: Font.Medium
+                em: 1.2
             }
 
             IconButton {

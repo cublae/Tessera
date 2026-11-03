@@ -24,8 +24,8 @@ RowLayout {
     Txt {
         Layout.fillWidth: true
         text: root.title
-        font.weight: Font.Bold
-        em: 1.05
+        font.weight: Font.Medium
+        em: 1.2
     }
 
     RowLayout {

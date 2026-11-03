@@ -22,21 +22,21 @@ Rectangle {
     }
 
     implicitWidth: 240
-    implicitHeight: 36
-    radius: Theme.radiusMd
-    color: Theme.viewBg
-    border.width: input.activeFocus ? 2 : 1
-    border.color: input.activeFocus ? Theme.accent : Theme.borders
+    implicitHeight: 44
+    radius: Math.min(height / 2, Theme.radiusLg)
+    color: Theme.fieldBg
+    border.width: input.activeFocus ? 2 : 0
+    border.color: Theme.accent
 
     Icon {
         id: leading
 
         visible: root.icon !== ""
         anchors.left: parent.left
-        anchors.leftMargin: 10
+        anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         name: root.icon
-        color: Theme.viewFg
+        color: Theme.fg
         dim: true
     }
 
@@ -44,13 +44,13 @@ Rectangle {
         id: input
 
         anchors.left: leading.visible ? leading.right : parent.left
-        anchors.leftMargin: 10
+        anchors.leftMargin: leading.visible ? 12 : 16
         anchors.right: eye.visible ? eye.left : parent.right
-        anchors.rightMargin: 10
+        anchors.rightMargin: 16
         anchors.verticalCenter: parent.verticalCenter
-        color: Theme.viewFg
+        color: Theme.fg
         selectionColor: Theme.alpha(Theme.accentBg, 0.5)
-        selectedTextColor: Theme.viewFg
+        selectedTextColor: Theme.fg
         font.family: Theme.fontFamily
         font.pointSize: Theme.fontSize
         clip: true
@@ -62,7 +62,7 @@ Rectangle {
             anchors.fill: parent
             visible: input.text === ""
             text: root.placeholder
-            color: Theme.viewFg
+            color: Theme.fg
             dim: true
         }
     }
@@ -72,10 +72,10 @@ Rectangle {
 
         visible: root.password
         anchors.right: parent.right
-        anchors.rightMargin: 10
+        anchors.rightMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         name: root.peek ? "view-conceal-symbolic" : "view-reveal-symbolic"
-        color: Theme.viewFg
+        color: Theme.fg
         dim: true
 
         MouseArea {
